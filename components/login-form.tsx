@@ -27,6 +27,15 @@ export function LoginForm({ nextPath, errorMessage }: LoginFormProps) {
         <p className="eyebrow">Sign in</p>
         <h1>Access your workspace</h1>
         <p>Use a magic link or continue with Google.</p>
+        {process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("127.0.0.1") ? (
+          <p className="login-local-hint">
+            Local development captures sign-in emails in{" "}
+            <a href="http://127.0.0.1:54324" target="_blank" rel="noreferrer">
+              Mailpit
+            </a>
+            . They are not delivered to your real inbox.
+          </p>
+        ) : null}
       </header>
 
       {errorMessage ? (
