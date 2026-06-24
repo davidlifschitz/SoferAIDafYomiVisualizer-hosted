@@ -1,0 +1,16 @@
+state/
+.env
+.env.local
+.env.*.local
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+.worktrees/
+ios/DafShiurRangeVisualizer/.build/
+ios/DafShiurRangeVisualizer/.swiftpm/
