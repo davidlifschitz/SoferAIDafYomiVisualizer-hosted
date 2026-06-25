@@ -1,5 +1,9 @@
 import { enqueueAnalysis } from "@/lib/analysis/enqueue";
 import type { RateLimiter } from "@/lib/analysis/rate-limit";
+import {
+  estimateMonthlySpendCents,
+  isSpendCapReached,
+} from "@/lib/admin/spending";
 import { canonicalLectureKey } from "@/lib/domain/lecture-key";
 import type { TurnstileClient } from "@/lib/services/turnstile";
 
@@ -49,6 +53,7 @@ export type SubmitErrorCode =
   | "invalid_turnstile"
   | "rate_limited"
   | "submissions_paused"
+  | "spending_cap_reached"
   | "invalid_lecture_url"
   | "insufficient_credits"
   | "concurrency_limited"
@@ -66,6 +71,7 @@ export class SubmitError extends Error {
 
 export type SubmitStore = {
   getAppSettings(): Promise<AppSettingsRecord | null>;
+  countMonthlyAnalysisCharges(): Promise<number>;
   findCanonicalLecture(sourceKey: string): Promise<CanonicalLectureRecord | null>;
   upsertCanonicalLecture(
     sourceKey: string,
@@ -171,6 +177,17 @@ export async function submitAnalysis(
       "submissions_paused",
       "Submissions are temporarily paused.",
     );
+  }
+
+  if (settings?.monthly_spend_cap_cents != null) {
+    const chargeCount = await store.countMonthlyAnalysisCharges();
+    const monthlySpendCents = estimateMonthlySpendCents(chargeCount);
+    if (isSpendCapReached(settings.monthly_spend_cap_cents, monthlySpendCents)) {
+      throw new SubmitError(
+        "spending_cap_reached",
+        "Monthly Sofer spending cap reached. Try again later.",
+      );
+    }
   }
 
   let sourceKey: string;

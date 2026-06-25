@@ -1,6 +1,19 @@
-import { AppShell } from "@/components/app-shell";
+import { redirect } from "next/navigation";
 
-export default function AdminPage() {
+import { AdminControls } from "@/components/admin-controls";
+import { AppShell } from "@/components/app-shell";
+import { getOperationalSnapshot } from "@/lib/admin/operations";
+import { createDefaultAdminStore } from "@/lib/admin/store";
+import { requireAdminUserId } from "@/lib/auth/admin";
+
+export default async function AdminPage() {
+  const adminId = await requireAdminUserId();
+  if (!adminId) {
+    redirect("/");
+  }
+
+  const snapshot = await getOperationalSnapshot(createDefaultAdminStore());
+
   return (
     <AppShell activePath="/admin">
       <section className="dashboard-heading" aria-labelledby="admin-title">
@@ -9,12 +22,12 @@ export default function AdminPage() {
         <p>Pause submissions, inspect failures, and adjust credits.</p>
       </section>
 
-      <section className="empty-dashboard" aria-label="Admin controls">
-        <div>
-          <h2>Admin controls arrive in a later task</h2>
-          <p>Trusted role checks and cost controls will be enforced here.</p>
-        </div>
-      </section>
+      <AdminControls
+        initialSettings={snapshot.settings}
+        monthlySpendCents={snapshot.monthlySpendCents}
+        costPerAnalysisCents={snapshot.costPerAnalysisCents}
+        problemAnalyses={snapshot.problemAnalyses}
+      />
     </AppShell>
   );
 }

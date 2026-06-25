@@ -11,6 +11,11 @@ import {
 import { createTurnstileClient, getTurnstileSecret } from "@/lib/services/turnstile";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+function monthStartIso(): string {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+}
+
 export function createSupabaseSubmitStore(admin: SupabaseClient): SubmitStore {
   return {
     async getAppSettings() {
@@ -25,6 +30,20 @@ export function createSupabaseSubmitStore(admin: SupabaseClient): SubmitStore {
       }
 
       return data;
+    },
+
+    async countMonthlyAnalysisCharges() {
+      const { count, error } = await admin
+        .from("credit_ledger")
+        .select("id", { count: "exact", head: true })
+        .eq("reason", "analysis_charge")
+        .gte("created_at", monthStartIso());
+
+      if (error) {
+        return 0;
+      }
+
+      return count ?? 0;
     },
 
     async findCanonicalLecture(sourceKey) {

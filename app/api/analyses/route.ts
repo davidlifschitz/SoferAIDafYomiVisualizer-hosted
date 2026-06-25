@@ -22,6 +22,7 @@ function statusForSubmitError(code: SubmitError["code"]): number {
     case "concurrency_limited":
       return 429;
     case "submissions_paused":
+    case "spending_cap_reached":
       return 503;
     case "insufficient_credits":
       return 402;

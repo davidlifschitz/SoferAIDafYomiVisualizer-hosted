@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RateLimiter } from "@/lib/analysis/rate-limit";
 import {
+  estimateMonthlySpendCents,
+} from "@/lib/admin/spending";
+import {
   SubmitError,
   type AnalysisRecord,
   type CanonicalLectureRecord,
@@ -18,6 +21,8 @@ const SOURCE_KEY = "yutorah:948110";
 function createMemoryStore() {
   let balance = 5;
   let chargeCount = 0;
+  let monthlySpendCapCents: number | null = null;
+  let analysisChargesThisMonth = 0;
   const analyses = new Map<string, AnalysisRecord>();
   const canonicalLectures = new Map<string, CanonicalLectureRecord>();
 
@@ -25,8 +30,11 @@ function createMemoryStore() {
     async getAppSettings() {
       return {
         submissions_paused: false,
-        monthly_spend_cap_cents: null,
+        monthly_spend_cap_cents: monthlySpendCapCents,
       };
+    },
+    async countMonthlyAnalysisCharges() {
+      return analysisChargesThisMonth;
     },
     async findCanonicalLecture(sourceKey) {
       return canonicalLectures.get(sourceKey) ?? null;
@@ -104,6 +112,7 @@ function createMemoryStore() {
 
       if (chargeCount === 0) {
         balance -= 1;
+        analysisChargesThisMonth += 1;
       }
       chargeCount += 1;
       return balance;
@@ -132,6 +141,12 @@ function createMemoryStore() {
     },
     setBalance(nextBalance: number) {
       balance = nextBalance;
+    },
+    setMonthlySpendCap(cents: number | null) {
+      monthlySpendCapCents = cents;
+    },
+    setMonthlyAnalysisCharges(count: number) {
+      analysisChargesThisMonth = count;
     },
   };
 }
@@ -322,6 +337,31 @@ describe("submitAnalysis", () => {
     ).rejects.toMatchObject({
       code: "invalid_lecture_url",
     } satisfies Partial<SubmitError>);
+  });
+
+  it("rejects when the monthly spending cap is reached", async () => {
+    memory.setMonthlySpendCap(100);
+    memory.setMonthlyAnalysisCharges(
+      Math.ceil(100 / estimateMonthlySpendCents(1, 50)),
+    );
+
+    const deps = createDeps({ store: memory.store });
+
+    await expect(
+      submitAnalysis(
+        {
+          userId: USER_ID,
+          lectureUrl: LECTURE_URL,
+          turnstileToken: "valid-token",
+        },
+        { ...deps, store: memory.store },
+      ),
+    ).rejects.toMatchObject({
+      code: "spending_cap_reached",
+    } satisfies Partial<SubmitError>);
+
+    expect(memory.getAnalyses()).toHaveLength(0);
+    expect(memory.getChargeCount()).toBe(0);
   });
 
   it("rejects when rate limits are exceeded", async () => {
