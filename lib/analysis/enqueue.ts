@@ -1,4 +1,5 @@
 export async function enqueueAnalysis(analysisId: string): Promise<void> {
-  // Task 6: start Vercel workflow
-  console.info("[enqueue stub]", analysisId);
+  const { start } = await import("workflow/api");
+  const { runAnalysisWorkflow } = await import("@/lib/analysis/workflow");
+  await start(runAnalysisWorkflow, [analysisId]);
 }
