@@ -2,9 +2,14 @@ import { describe, expect, it } from "vitest";
 
 import {
   MAX_ENUMERATED_HALF_PAGES,
+  dafYomiAmud,
+  dafYomiMassechetId,
+  dafYomiPageId,
+  dafYomiPageUrl,
+  dafYomiPdfUrl,
   enumerateHalfPages,
+  previousHalfPageRef,
   formatDafRef,
-  mercavaMetanavId,
   parseDafRef,
 } from "../../lib/domain/daf-ref";
 
@@ -33,10 +38,34 @@ describe("daf references", () => {
     expect(formatDafRef(parseDafRef("Shabbat 2a"), false)).toBe("Shabbat 2a");
   });
 
-  it("maps each Shabbat half-page to its Mercava metanav ID", () => {
-    expect(mercavaMetanavId("Shabbat 2a")).toBe(2180);
-    expect(mercavaMetanavId("Shabbat 2b:14")).toBe(2184);
-    expect(mercavaMetanavId("Shabbos 3a")).toBe(2188);
+  it("maps each Shabbat half-page to daf-yomi massechet, amud, and page IDs", () => {
+    expect(dafYomiMassechetId("Shabbat 2a")).toBe(284);
+    expect(dafYomiAmud("Shabbat 2a")).toBe(3);
+    expect(dafYomiAmud("Shabbat 2b:14")).toBe(4);
+    expect(dafYomiAmud("Shabbos 3a")).toBe(5);
+    expect(dafYomiPageId("Shabbat 2a")).toBe(126);
+    expect(dafYomiPageId("Shabbat 2b")).toBe(127);
+    expect(dafYomiPageId("Shabbos 3a")).toBe(128);
+  });
+
+  it("builds daf-yomi page and PDF URLs", () => {
+    expect(dafYomiPageUrl("Shabbat 2a")).toBe(
+      "https://daf-yomi.com/Dafyomi_Page.aspx?massechet=284&amud=3&fs=1",
+    );
+    expect(dafYomiPageUrl("Shabbat 2b")).toBe(
+      "https://daf-yomi.com/Dafyomi_Page.aspx?massechet=284&amud=4&fs=1",
+    );
+    expect(dafYomiPdfUrl("Shabbat 2a")).toBe(
+      "https://daf-yomi.com/Data/UploadedFiles/DY_Page/126.pdf",
+    );
+    expect(dafYomiPdfUrl("Shabbat 2b")).toBe(
+      "https://daf-yomi.com/Data/UploadedFiles/DY_Page/127.pdf",
+    );
+  });
+
+  it("resolves the prior half-page for continuation shiurim", () => {
+    expect(previousHalfPageRef("Shabbat 3a")).toBe("Shabbat 2b");
+    expect(previousHalfPageRef("Shabbat 2a")).toBeNull();
   });
 
   it("enumerates an inclusive range of canonical half-pages", () => {

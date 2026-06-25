@@ -1,4 +1,5 @@
-const SHABBAT_2A_METANAV_ID = 2180;
+const DAF_YOMI_SHABBAT_MASSECHET_ID = 284;
+const DAF_YOMI_SHABBAT_2A_PAGE_ID = 126;
 const MIN_SHABBAT_DAF = 2;
 const MAX_SHABBAT_DAF = 157;
 
@@ -78,13 +79,57 @@ function halfPageIndex(ref: DafRef): number {
   return ref.daf * 2 + (ref.side === "b" ? 1 : 0);
 }
 
-export function mercavaMetanavId(ref: DafRefInput): number {
+export function dafYomiMassechetId(ref: DafRefInput): number {
   const parsed = coerceDafRef(ref);
   if (parsed.tractate !== "Shabbat") {
-    throw new Error(`Unsupported Mercava tractate: ${parsed.tractate}`);
+    throw new Error(`Unsupported daf-yomi tractate: ${parsed.tractate}`);
   }
 
-  return SHABBAT_2A_METANAV_ID + (halfPageIndex(parsed) - halfPageIndex(parseDafRef("Shabbat 2a"))) * 4;
+  return DAF_YOMI_SHABBAT_MASSECHET_ID;
+}
+
+export function dafYomiAmud(ref: DafRefInput): number {
+  return halfPageIndex(coerceDafRef(ref)) - 1;
+}
+
+export function dafYomiPageId(ref: DafRefInput): number {
+  const parsed = coerceDafRef(ref);
+  if (parsed.tractate !== "Shabbat") {
+    throw new Error(`Unsupported daf-yomi tractate: ${parsed.tractate}`);
+  }
+
+  return (
+    DAF_YOMI_SHABBAT_2A_PAGE_ID +
+    (halfPageIndex(parsed) - halfPageIndex(parseDafRef("Shabbat 2a")))
+  );
+}
+
+export const DAF_YOMI_PAGE_URL_BASE = "https://daf-yomi.com/Dafyomi_Page.aspx";
+export const DAF_YOMI_PDF_URL_BASE =
+  "https://daf-yomi.com/Data/UploadedFiles/DY_Page";
+
+export function dafYomiPageUrl(ref: DafRefInput): string {
+  const massechet = dafYomiMassechetId(ref);
+  const amud = dafYomiAmud(ref);
+  return `${DAF_YOMI_PAGE_URL_BASE}?massechet=${massechet}&amud=${amud}&fs=1`;
+}
+
+export function dafYomiPdfUrl(ref: DafRefInput): string {
+  return `${DAF_YOMI_PDF_URL_BASE}/${dafYomiPageId(ref)}.pdf`;
+}
+
+export function previousHalfPageRef(ref: DafRefInput): string | null {
+  const parsed = coerceDafRef(ref);
+  const startIndex = halfPageIndex(parseDafRef("Shabbat 2a"));
+  const currentIndex = halfPageIndex(parsed);
+  if (currentIndex <= startIndex) {
+    return null;
+  }
+
+  const previousIndex = currentIndex - 1;
+  const daf = Math.floor(previousIndex / 2);
+  const side: DafSide = previousIndex % 2 === 0 ? "a" : "b";
+  return formatHalfPageRef({ tractate: parsed.tractate, daf, side });
 }
 
 export function enumerateHalfPages(startRef: DafRefInput, endRef: DafRefInput): string[] {

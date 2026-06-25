@@ -123,6 +123,38 @@ describe("range aligner", () => {
     expect(range.end?.id).toBe("Shabbat 3a:2");
   });
 
+  it("starts a continuation shiur on the prior amud after the previous endpoint", () => {
+    const range = detectRange(
+      "Today's daf is Shabbos Daf Gimmel. We continue where we ended yesterday with Rav Mattana and twelve cases.",
+      [
+        {
+          ref: "Shabbat 2b",
+          segments: [
+            { ref: "Shabbat 2b:14", en: "Rava domains", he: "רָבָא אָמַר" },
+            {
+              ref: "Shabbat 2b:15",
+              en: "Rav Mattana said to Abaye they are twelve",
+              he: "רַב מַתְנָה לְאַבָּיֵי תרתי סרי",
+            },
+            { ref: "Shabbat 2b:16", en: "Abaye sixteen", he: "שיתסרי" },
+          ],
+        },
+        {
+          ref: "Shabbat 3a",
+          segments: [{ ref: "Shabbat 3a:1", en: "first section exempt", he: "בבא דרישא" }],
+        },
+      ],
+      {
+        preferredStartRef: "Shabbat 3a",
+        priorShiurEndSegmentRef: "Shabbat 2b:14",
+        windowWords: 20,
+      },
+    );
+
+    expect(range.start?.id).toBe("Shabbat 2b:15");
+    expect(range.start?.selectionReason).toBe("daf-continuation-anchor");
+  });
+
   it("keeps the actual Shabbos Daf 2 fixture range stable", () => {
     const pages = segmentPagesFromFixture();
 

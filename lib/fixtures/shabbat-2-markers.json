@@ -1,0 +1,33 @@
+{
+  "imageWidth": 1296,
+  "imageHeight": 2000,
+  "generatedAt": "2026-06-25T16:15:00.000Z",
+  "markers": [
+    {
+      "kind": "start",
+      "dafRef": "Shabbat 2a",
+      "segmentRef": "Shabbat 2a:1",
+      "hebrewSnippet": "יְצִיאוֹת",
+      "anchorNote": "Large opening word of the mishna in the center column",
+      "source": "manual",
+      "columnX": 0.614,
+      "columnY": 0.023,
+      "x": 683,
+      "y": 297,
+      "confidence": 0.98
+    },
+    {
+      "kind": "end",
+      "dafRef": "Shabbat 2b",
+      "segmentRef": "Shabbat 2b:14",
+      "hebrewSnippet": "רָבָא אָמַר, ״רְשׁוּיוֹת״ קָתָנֵי",
+      "anchorNote": "Rava in the center gemara column, not Tosafot or Rashi",
+      "source": "manual",
+      "columnX": 0.764,
+      "columnY": 0.3086,
+      "x": 779,
+      "y": 760,
+      "confidence": 0.98
+    }
+  ]
+}

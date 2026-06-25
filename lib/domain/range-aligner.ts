@@ -1,3 +1,4 @@
+import { previousHalfPageRef } from "./daf-ref";
 import type {
   RangeChunk,
   RangeDetectionResult,
@@ -14,8 +15,10 @@ export interface RangeAlignerOptions {
   windowWords?: number;
   preferredStartRef?: string;
   preferredEndRef?: string;
+  priorShiurEndSegmentRef?: string;
   refBiasMargin?: number;
   introAnchorScore?: number;
+  continuationAnchorScore?: number;
   endLatestWithinMargin?: number;
 }
 
@@ -212,21 +215,77 @@ function selectLatestCloseCandidate(
     .sort((left, right) => right.ordinal - left.ordinal || right.score - left.score)[0];
 }
 
+export function looksLikeDafIntro(windowText: string): boolean {
+  const lower = windowText.toLowerCase();
+  return (
+    lower.includes("today") &&
+    (lower.includes("daf") || lower.includes("דף")) &&
+    (lower.includes("shabbos") || lower.includes("shabbat") || lower.includes("שבת"))
+  );
+}
+
+export function looksLikeContinuation(windowText: string): boolean {
+  const lower = windowText.toLowerCase();
+  const hasPriorDayCue =
+    lower.includes("yesterday we") ||
+    lower.includes("ended with") ||
+    lower.includes("we ended") ||
+    lower.includes("left off") ||
+    lower.includes("where we ended") ||
+    lower.includes("pick up where") ||
+    lower.includes("picked up where");
+  const hasResumeCue =
+    lower.includes("continue where") ||
+    lower.includes("continuing where") ||
+    lower.includes("continue from") ||
+    lower.includes("continuing from") ||
+    lower.includes("resume") ||
+    lower.includes("pick up");
+
+  return hasPriorDayCue || hasResumeCue;
+}
+
 function findIntroStart(
   windowText: string,
   chunks: RangeChunk[],
   preferredRef?: string,
 ): RangeChunk | null {
-  if (!preferredRef) return null;
-  const lower = windowText.toLowerCase();
-  const looksLikeDafIntro =
-    lower.includes("today") &&
-    (lower.includes("daf") || lower.includes("דף")) &&
-    (lower.includes("shabbos") || lower.includes("shabbat") || lower.includes("שבת"));
-  if (!looksLikeDafIntro) return null;
+  if (!preferredRef || !looksLikeDafIntro(windowText)) return null;
+  if (looksLikeContinuation(windowText)) return null;
   return (
     chunks.find((chunk) => chunk.ref === preferredRef && chunk.chunkIndex === 1) || null
   );
+}
+
+function findContinuationStart(
+  startCandidates: ScoredRangeChunk[],
+  chunks: RangeChunk[],
+  preferredStartRef: string,
+  priorShiurEndSegmentRef?: string,
+): ScoredRangeChunk | null {
+  const priorHalfPage = previousHalfPageRef(preferredStartRef);
+  if (!priorHalfPage) return null;
+
+  let minChunkIndex = 1;
+  if (priorShiurEndSegmentRef) {
+    const priorEnd = chunks.find((chunk) => chunk.id === priorShiurEndSegmentRef);
+    if (priorEnd?.ref === priorHalfPage) {
+      minChunkIndex = priorEnd.chunkIndex + 1;
+    }
+  }
+
+  const priorCandidates = startCandidates.filter(
+    (candidate) =>
+      candidate.ref === priorHalfPage && candidate.chunkIndex >= minChunkIndex,
+  );
+  if (!priorCandidates.length) return null;
+
+  return priorCandidates.sort(
+    (left, right) =>
+      right.score - left.score ||
+      left.chunkIndex - right.chunkIndex ||
+      left.ordinal - right.ordinal,
+  )[0];
 }
 
 export function detectRange(
@@ -240,6 +299,26 @@ export function detectRange(
   const endCandidates = rankChunks(windows.last, chunks);
   const start =
     (() => {
+      if (
+        options.preferredStartRef &&
+        looksLikeDafIntro(windows.first.text) &&
+        looksLikeContinuation(windows.first.text)
+      ) {
+        const continuationStart = findContinuationStart(
+          startCandidates,
+          chunks,
+          options.preferredStartRef,
+          options.priorShiurEndSegmentRef,
+        );
+        if (continuationStart) {
+          return {
+            ...continuationStart,
+            score: options.continuationAnchorScore ?? 0.78,
+            selectionReason: "daf-continuation-anchor" as const,
+          };
+        }
+      }
+
       const introStart = findIntroStart(
         windows.first.text,
         chunks,

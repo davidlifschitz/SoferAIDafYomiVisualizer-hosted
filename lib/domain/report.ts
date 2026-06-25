@@ -26,9 +26,11 @@ export interface RangeChunk {
   tokens: string[];
 }
 
+export type RangeSelectionReason = "daf-intro-anchor" | "daf-continuation-anchor";
+
 export interface ScoredRangeChunk extends RangeChunk {
   score: number;
-  selectionReason?: "daf-intro-anchor";
+  selectionReason?: RangeSelectionReason;
 }
 
 export interface TranscriptWindow {

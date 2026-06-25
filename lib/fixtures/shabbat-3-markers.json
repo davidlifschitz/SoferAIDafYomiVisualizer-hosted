@@ -1,0 +1,33 @@
+{
+  "imageWidth": 1296,
+  "imageHeight": 2000,
+  "generatedAt": "2026-06-25T19:00:00.000Z",
+  "markers": [
+    {
+      "kind": "start",
+      "dafRef": "Shabbat 2b",
+      "segmentRef": "Shabbat 2b:15",
+      "hebrewSnippet": "אֲמַר לֵיהּ רַב מַתְנָה לְאַבָּיֵי",
+      "anchorNote": "Daf 3 shiur resumes at Rav Mattana on 2b after Daf 2 ended at 2b:14",
+      "source": "manual",
+      "columnX": 0.484,
+      "columnY": 0.311,
+      "x": 600,
+      "y": 764,
+      "confidence": 0.98
+    },
+    {
+      "kind": "end",
+      "dafRef": "Shabbat 3b",
+      "segmentRef": "Shabbat 3b:3",
+      "hebrewSnippet": "אָמַר אַבָּיֵי: פְּשִׁיטָא לִי יָדוֹ שֶׁל אָדָם",
+      "anchorNote": "Abaye opening statement on yad shel adam in center gemara",
+      "source": "manual",
+      "columnX": 0.463,
+      "columnY": 0.407,
+      "x": 586,
+      "y": 920,
+      "confidence": 0.98
+    }
+  ]
+}
