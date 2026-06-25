@@ -1,20 +1,19 @@
 import { AppShell } from "@/components/app-shell";
+import { BillingActions } from "@/components/billing-actions";
+import { getCurrentUserBalance } from "@/lib/billing/balance";
 
-export default function BillingPage() {
+export default async function BillingPage() {
+  const balance = await getCurrentUserBalance();
+
   return (
     <AppShell activePath="/billing">
       <section className="dashboard-heading" aria-labelledby="billing-title">
         <p className="eyebrow">Credits</p>
         <h1 id="billing-title">Billing</h1>
-        <p>Purchase credit packs or manage your subscription.</p>
+        <p>Purchase credit packs or manage your subscription. Credits roll over indefinitely.</p>
       </section>
 
-      <section className="empty-dashboard" aria-label="Billing options">
-        <div>
-          <h2>Billing arrives in a later task</h2>
-          <p>Stripe checkout and subscription management will be wired here.</p>
-        </div>
-      </section>
+      <BillingActions balance={balance} />
     </AppShell>
   );
 }
