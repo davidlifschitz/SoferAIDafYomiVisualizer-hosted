@@ -5,6 +5,8 @@ import {
   ensureSoferSubmission,
   resolveSoferTranscriptionId,
 } from "@/lib/analysis/workflow-actions";
+import { createBrowserlessClient } from "@/lib/services/browserless";
+import { createAnalysisStorageClient } from "@/lib/services/storage-runtime";
 import { createDefaultWorkflowStore } from "@/lib/analysis/workflow-store-supabase";
 import type { WorkflowStore } from "@/lib/analysis/workflow-store";
 import type { ResolvedLecture } from "@/lib/analysis/workflow-types";
@@ -157,7 +159,12 @@ export async function capturePagesStep(
   "use step";
 
   const store = await workflowStore();
-  const capture = await captureRequiredPages(candidateRefs);
+  const capture = await captureRequiredPages(candidateRefs, {
+    analysisId,
+    browserless: createBrowserlessClient(),
+    storage: createAnalysisStorageClient(),
+    store,
+  });
   const status = capture.captured === capture.total ? "complete" : "partial";
   await store.setStatus(analysisId, status);
   await store.setStage(analysisId, "complete");

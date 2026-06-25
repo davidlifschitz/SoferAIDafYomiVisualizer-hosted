@@ -6,6 +6,14 @@ import type {
 import type { AnalysisStatus } from "@/lib/analysis/submit";
 import type { DafYomiReport } from "@/lib/domain/report";
 
+export type AnalysisPageRecord = {
+  pageNumber: number;
+  dafRef: string;
+  storagePath: string;
+  imageWidth: number;
+  imageHeight: number;
+};
+
 export type WorkflowStore = {
   getAnalysisContext(analysisId: string): Promise<WorkflowAnalysisContext | null>;
   getSoferState(analysisId: string): Promise<WorkflowSoferState | null>;
@@ -17,6 +25,8 @@ export type WorkflowStore = {
   setStatus(analysisId: string, status: AnalysisStatus): Promise<void>;
   saveReport(analysisId: string, report: DafYomiReport): Promise<void>;
   setWorkflowError(analysisId: string, message: string): Promise<void>;
+  listAnalysisPages(analysisId: string): Promise<AnalysisPageRecord[]>;
+  saveAnalysisPage(analysisId: string, page: AnalysisPageRecord): Promise<void>;
 };
 
 type WorkflowStateRecord = {
@@ -26,6 +36,7 @@ type WorkflowStateRecord = {
   status: AnalysisStatus;
   report: DafYomiReport | null;
   error: string | null;
+  pages: AnalysisPageRecord[];
 };
 
 export function createMemoryWorkflowStore(
@@ -38,6 +49,7 @@ export function createMemoryWorkflowStore(
     status: seed?.status ?? "pending",
     report: seed?.report ?? null,
     error: seed?.error ?? null,
+    pages: seed?.pages ?? [],
   };
 
   return {
@@ -63,6 +75,19 @@ export function createMemoryWorkflowStore(
     },
     async setWorkflowError(_analysisId, message) {
       state.error = message;
+    },
+    async listAnalysisPages() {
+      return state.pages;
+    },
+    async saveAnalysisPage(_analysisId, page) {
+      const existingIndex = state.pages.findIndex(
+        (entry) => entry.dafRef === page.dafRef,
+      );
+      if (existingIndex >= 0) {
+        state.pages[existingIndex] = page;
+        return;
+      }
+      state.pages.push(page);
     },
   };
 }

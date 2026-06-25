@@ -9,6 +9,8 @@ import {
 import { createMemoryWorkflowStore } from "@/lib/analysis/workflow-store";
 import sefariaFixture from "@/fixtures/sefaria-shabbat-2.json";
 import transcriptFixture from "@/fixtures/transcript-948110.json";
+import type { BrowserlessClient } from "@/lib/services/browserless";
+import type { AnalysisStorageClient } from "@/lib/services/storage";
 import type { SoferClient } from "@/lib/services/sofer";
 
 const ANALYSIS_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -117,10 +119,73 @@ describe("buildWorkflowReport", () => {
 });
 
 describe("captureRequiredPages", () => {
-  it("returns partial capture until Browserless is wired", async () => {
-    await expect(captureRequiredPages(["Shabbat 2a", "Shabbat 2b"])).resolves.toEqual({
-      captured: 0,
-      total: 2,
+  it("uploads every required page and reaches a complete capture count", async () => {
+    const store = createMemoryWorkflowStore();
+    const png = Buffer.from([137, 80, 78, 71]);
+
+    const browserless = {
+      captureDafPage: vi.fn(async (dafRef: string) => ({
+        dafRef,
+        bytes: png,
+        width: 1240,
+        height: 1280,
+      })),
+    } as unknown as BrowserlessClient;
+
+    const storage = {
+      uploadAnalysisPage: vi.fn(async (analysisId: string, dafRef: string) =>
+        `analyses/${analysisId}/${dafRef.replace(/ /g, "-")}.png`,
+      ),
+    } as unknown as AnalysisStorageClient;
+
+    const result = await captureRequiredPages(["Shabbat 2a", "Shabbat 2b"], {
+      analysisId: ANALYSIS_ID,
+      browserless,
+      storage,
+      store,
     });
+
+    expect(result).toEqual({ captured: 2, total: 2 });
+    expect(browserless.captureDafPage).toHaveBeenCalledTimes(2);
+    expect(storage.uploadAnalysisPage).toHaveBeenCalledTimes(2);
+    expect(store.state.pages).toHaveLength(2);
+  });
+
+  it("skips pages that were already captured on replay", async () => {
+    const store = createMemoryWorkflowStore({
+      pages: [
+        {
+          pageNumber: 1,
+          dafRef: "Shabbat 2a",
+          storagePath: "analyses/test/Shabbat-2a.png",
+          imageWidth: 1240,
+          imageHeight: 1280,
+        },
+      ],
+    });
+
+    const browserless = {
+      captureDafPage: vi.fn(async (dafRef: string) => ({
+        dafRef,
+        bytes: Buffer.from([137, 80, 78, 71]),
+        width: 1240,
+        height: 1280,
+      })),
+    } as unknown as BrowserlessClient;
+
+    const storage = {
+      uploadAnalysisPage: vi.fn(async () => "path"),
+    } as unknown as AnalysisStorageClient;
+
+    const result = await captureRequiredPages(["Shabbat 2a", "Shabbat 2b"], {
+      analysisId: ANALYSIS_ID,
+      browserless,
+      storage,
+      store,
+    });
+
+    expect(result).toEqual({ captured: 2, total: 2 });
+    expect(browserless.captureDafPage).toHaveBeenCalledTimes(1);
+    expect(browserless.captureDafPage).toHaveBeenCalledWith("Shabbat 2b");
   });
 });

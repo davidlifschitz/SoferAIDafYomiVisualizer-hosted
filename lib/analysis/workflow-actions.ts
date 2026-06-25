@@ -13,6 +13,8 @@ import {
 } from "@/lib/services/sofer";
 import type { ResolvedLecture } from "@/lib/analysis/workflow-types";
 import type { WorkflowStore } from "@/lib/analysis/workflow-store";
+import type { BrowserlessClient } from "@/lib/services/browserless";
+import type { AnalysisStorageClient } from "@/lib/services/storage";
 
 export const DEFAULT_SOFER_CLIENT_ITEM_ID = "yutorah-lecture";
 export const DEFAULT_SOFER_POLL_INTERVAL_MS = 30_000;
@@ -173,12 +175,54 @@ export type CapturePagesResult = {
   total: number;
 };
 
+export type CapturePagesDependencies = {
+  analysisId: string;
+  browserless: BrowserlessClient;
+  storage: AnalysisStorageClient;
+  store?: WorkflowStore;
+};
+
 export async function captureRequiredPages(
   halfPages: string[],
+  deps: CapturePagesDependencies,
 ): Promise<CapturePagesResult> {
-  // Task 7 wires Browserless capture and Supabase Storage uploads.
+  const existingPages = deps.store
+    ? await deps.store.listAnalysisPages(deps.analysisId)
+    : [];
+  const capturedRefs = new Set(existingPages.map((page) => page.dafRef));
+
+  for (let index = 0; index < halfPages.length; index += 1) {
+    const dafRef = halfPages[index];
+    if (capturedRefs.has(dafRef)) {
+      continue;
+    }
+
+    try {
+      const image = await deps.browserless.captureDafPage(dafRef);
+      const storagePath = await deps.storage.uploadAnalysisPage(
+        deps.analysisId,
+        dafRef,
+        image.bytes,
+      );
+
+      if (deps.store) {
+        await deps.store.saveAnalysisPage(deps.analysisId, {
+          pageNumber: index + 1,
+          dafRef,
+          storagePath,
+          imageWidth: image.width,
+          imageHeight: image.height,
+        });
+      }
+
+      capturedRefs.add(dafRef);
+    } catch {
+      // Preserve partial results when individual captures fail.
+    }
+  }
+
   return {
-    captured: 0,
+    captured: halfPages.filter((dafRef) => capturedRefs.has(dafRef)).length,
     total: halfPages.length,
   };
 }

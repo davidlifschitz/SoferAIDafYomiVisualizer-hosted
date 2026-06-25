@@ -2,7 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import type { WorkflowStore } from "@/lib/analysis/workflow-store";
+import type { AnalysisPageRecord, WorkflowStore } from "@/lib/analysis/workflow-store";
 import type { DafYomiReport } from "@/lib/domain/report";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -102,6 +102,42 @@ export function createSupabaseWorkflowStore(admin: SupabaseClient): WorkflowStor
         .from("analyses")
         .update({ workflow_error: message })
         .eq("id", analysisId);
+    },
+
+    async listAnalysisPages(analysisId) {
+      const { data } = await admin
+        .from("analysis_pages")
+        .select("page_number, daf_ref, storage_path, image_width, image_height")
+        .eq("analysis_id", analysisId)
+        .order("page_number", { ascending: true });
+
+      return (data ?? []).map(
+        (row): AnalysisPageRecord => ({
+          pageNumber: row.page_number,
+          dafRef: row.daf_ref,
+          storagePath: row.storage_path,
+          imageWidth: row.image_width,
+          imageHeight: row.image_height,
+        }),
+      );
+    },
+
+    async saveAnalysisPage(analysisId, page) {
+      const { error } = await admin.from("analysis_pages").upsert(
+        {
+          analysis_id: analysisId,
+          page_number: page.pageNumber,
+          daf_ref: page.dafRef,
+          storage_path: page.storagePath,
+          image_width: page.imageWidth,
+          image_height: page.imageHeight,
+        },
+        { onConflict: "analysis_id,page_number" },
+      );
+
+      if (error) {
+        throw new Error(`Failed to save analysis page ${page.dafRef}: ${error.message}`);
+      }
     },
   };
 }
