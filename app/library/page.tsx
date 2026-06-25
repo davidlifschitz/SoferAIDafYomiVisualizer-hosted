@@ -1,14 +1,12 @@
 import Link from "next/link";
 
 import { DemoAppShell } from "@/components/demo-app-shell";
-import {
-  formatDemoCardTitle,
-  formatRangeSummary,
-  listDemoAnalyses,
-} from "@/lib/fixtures/demo-analyses";
+import { listLibraryEntries } from "@/lib/analysis/library";
 
-export default function LibraryPage() {
-  const demoAnalyses = listDemoAnalyses();
+export default async function LibraryPage() {
+  const entries = await listLibraryEntries();
+  const listed = entries.filter((entry) => entry.source === "listed");
+  const fixtures = entries.filter((entry) => entry.source === "fixture");
 
   return (
     <DemoAppShell activePath="/library">
@@ -16,27 +14,43 @@ export default function LibraryPage() {
         <p className="eyebrow">Public library</p>
         <h1 id="library-title">Listed results</h1>
         <p>
-          Browse fixture-backed shiur visualizations without signing in. Live listed results will
-          appear here after submission, workflow, and publication tasks are complete.
+          Browse published shiur visualizations without signing in. Unlisted results are only
+          available through their share URLs at <code>/r/&lt;public-id&gt;</code>.
         </p>
       </section>
 
+      {listed.length > 0 ? (
+        <section className="recent-results" aria-labelledby="listed-results-title">
+          <div className="panel-heading">
+            <h2 id="listed-results-title">Published analyses</h2>
+          </div>
+          {listed.map((entry) => (
+            <article key={entry.id} className="result-card">
+              <div>
+                <h3>{entry.title}</h3>
+                <p>{entry.summary}</p>
+              </div>
+              <Link className="button-secondary result-card-link" href={entry.href}>
+                Open result
+              </Link>
+            </article>
+          ))}
+        </section>
+      ) : null}
+
       <section className="recent-results" aria-labelledby="library-results-title">
         <div className="panel-heading">
-          <h2 id="library-results-title">Available demos</h2>
+          <h2 id="library-results-title">Fixture demos</h2>
           <p>Precomputed Shabbat 2 and Shabbat 3 analyses with calibrated marker placement.</p>
         </div>
 
-        {demoAnalyses.map((analysis) => (
-          <article key={analysis.id} className="result-card">
+        {fixtures.map((entry) => (
+          <article key={entry.id} className="result-card">
             <div>
-              <h3>{formatDemoCardTitle(analysis)}</h3>
-              <p>{formatRangeSummary(analysis)}</p>
+              <h3>{entry.title}</h3>
+              <p>{entry.summary}</p>
             </div>
-            <Link
-              className="button-secondary result-card-link"
-              href={`/analyses/${analysis.id}`}
-            >
+            <Link className="button-secondary result-card-link" href={entry.href}>
               Open visualizer
             </Link>
           </article>
