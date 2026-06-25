@@ -151,7 +151,7 @@ export function createSupabaseSubmitStore(admin: SupabaseClient): SubmitStore {
     },
 
     async chargeCredit(userId, idempotencyKey, analysisId) {
-      const { data, error } = await admin.schema("private").rpc("charge_credit", {
+      const { data, error } = await admin.rpc("charge_credit", {
         p_user_id: userId,
         p_idempotency_key: idempotencyKey,
         p_analysis_id: analysisId,

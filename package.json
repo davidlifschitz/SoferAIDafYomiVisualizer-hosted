@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:secrets": "node scripts/scan-secrets.mjs",
     "legacy:test": "node --test test/*.test.mjs"
   },
   "dependencies": {
