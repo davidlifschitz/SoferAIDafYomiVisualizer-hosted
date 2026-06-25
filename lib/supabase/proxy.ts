@@ -1,10 +1,20 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isProtectedPath, sanitizeNextPath } from "@/lib/auth/redirect";
+import {
+  isProtectedPath,
+  needsSessionRefresh,
+  sanitizeNextPath,
+} from "@/lib/auth/redirect";
 import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export async function updateSession(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (!needsSessionRefresh(pathname)) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -38,9 +48,19 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
-  const { pathname } = request.nextUrl;
+  let user: Record<string, unknown> | undefined;
+
+  try {
+    const { data } = await Promise.race([
+      supabase.auth.getClaims(),
+      new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("auth_claims_timeout")), 1_000);
+      }),
+    ]);
+    user = data?.claims;
+  } catch {
+    user = undefined;
+  }
 
   if (!user && isProtectedPath(pathname)) {
     const redirectUrl = request.nextUrl.clone();

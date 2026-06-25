@@ -13,9 +13,14 @@ const initialState: LoginActionState = {};
 type LoginFormProps = {
   nextPath: string;
   errorMessage?: string;
+  supabaseOffline?: boolean;
 };
 
-export function LoginForm({ nextPath, errorMessage }: LoginFormProps) {
+export function LoginForm({
+  nextPath,
+  errorMessage,
+  supabaseOffline = false,
+}: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(
     signInWithEmail,
     initialState,
@@ -70,7 +75,11 @@ export function LoginForm({ nextPath, errorMessage }: LoginFormProps) {
           placeholder="you@example.com"
           className="field-input"
         />
-        <button type="submit" className="button-primary" disabled={isPending}>
+        <button
+          type="submit"
+          className="button-primary"
+          disabled={isPending || supabaseOffline}
+        >
           {isPending ? "Sending link..." : "Send magic link"}
         </button>
       </form>
@@ -81,7 +90,11 @@ export function LoginForm({ nextPath, errorMessage }: LoginFormProps) {
 
       <form action={signInWithGoogle}>
         <input type="hidden" name="next" value={nextPath} />
-        <button type="submit" className="button-secondary">
+        <button
+          type="submit"
+          className="button-secondary"
+          disabled={supabaseOffline}
+        >
           Continue with Google
         </button>
       </form>

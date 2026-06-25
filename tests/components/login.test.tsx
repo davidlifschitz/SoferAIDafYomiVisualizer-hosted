@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { LoginForm } from "@/components/login-form";
-import { isProtectedPath, sanitizeNextPath } from "@/lib/auth/redirect";
+import {
+  isProtectedPath,
+  needsSessionRefresh,
+  sanitizeNextPath,
+} from "@/lib/auth/redirect";
 
 vi.mock("@/app/login/actions", () => ({
   signInWithEmail: vi.fn(),
@@ -37,6 +41,16 @@ describe("isProtectedPath", () => {
     expect(isProtectedPath("/library")).toBe(false);
     expect(isProtectedPath("/auth/callback")).toBe(false);
     expect(isProtectedPath("/r/share-id")).toBe(false);
+    expect(isProtectedPath("/analyses/fixture-shabbat-2")).toBe(false);
+  });
+});
+
+describe("needsSessionRefresh", () => {
+  it("skips Supabase for public routes but still checks login", () => {
+    expect(needsSessionRefresh("/login")).toBe(true);
+    expect(needsSessionRefresh("/library")).toBe(false);
+    expect(needsSessionRefresh("/analyses/fixture-shabbat-2")).toBe(false);
+    expect(needsSessionRefresh("/analyses/real-id")).toBe(true);
   });
 });
 

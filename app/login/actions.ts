@@ -35,19 +35,26 @@ export async function signInWithEmail(
     return { error: "Email is required." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: buildAuthCallbackUrl(next),
-    },
-  });
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: buildAuthCallbackUrl(next),
+      },
+    });
 
-  if (error) {
-    return { error: error.message };
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { success: true };
+  } catch {
+    return {
+      error:
+        "Could not reach Supabase. If you are developing locally, run `supabase start -x vector`. Fixture demos are available without sign-in at /library.",
+    };
   }
-
-  return { success: true };
 }
 
 export async function signInWithGoogle(formData: FormData) {

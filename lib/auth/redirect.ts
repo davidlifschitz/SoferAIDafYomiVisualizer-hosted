@@ -1,5 +1,5 @@
 const PUBLIC_PATHS = new Set(["/login", "/library"]);
-const PUBLIC_PREFIXES = ["/auth/", "/r/"];
+const PUBLIC_PREFIXES = ["/auth/", "/r/", "/analyses/fixture-"];
 
 const PROTECTED_PREFIXES = [
   "/billing",
@@ -25,6 +25,14 @@ export function sanitizeNextPath(
   }
 
   return next;
+}
+
+export function needsSessionRefresh(pathname: string): boolean {
+  if (pathname === "/login") {
+    return true;
+  }
+
+  return isProtectedPath(pathname);
 }
 
 export function isProtectedPath(pathname: string): boolean {
