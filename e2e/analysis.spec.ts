@@ -11,6 +11,9 @@ import {
 } from "./helpers/supabase";
 
 const LECTURE_URL = "https://www.yutorah.org/lectures/lecture.cfm/948110";
+/** Use a separate lecture so prior E2E runs cannot leave 948110 complete and skip charging. */
+const NEW_ANALYSIS_LECTURE_URL =
+  "https://www.yutorah.org/lectures/lecture.cfm/948111";
 
 test.describe("fixture analysis visualizer", () => {
   test("Shabbos Daf 2 starts on 2a and ends on 2b", async ({ page }) => {
@@ -34,13 +37,15 @@ test.describe("protected submissions", () => {
 
     const response = await page.request.post("/api/analyses", {
       data: {
-        lectureUrl: LECTURE_URL,
+        lectureUrl: NEW_ANALYSIS_LECTURE_URL,
         turnstileToken: "XXXX.DUMMY.TOKEN.XXXX",
         idempotencyKey: `e2e-new-${Date.now()}`,
       },
     });
 
     expect(response.status()).toBe(200);
+    const payload = (await response.json()) as { reused?: boolean };
+    expect(payload.reused).not.toBe(true);
     const balanceAfter = await getCreditBalanceForUser(userId!);
     expect(balanceAfter).toBe(balanceBefore - 1);
   });
