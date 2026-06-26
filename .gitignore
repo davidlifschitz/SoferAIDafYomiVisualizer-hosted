@@ -14,3 +14,7 @@ next-env.d.ts
 .worktrees/
 ios/DafShiurRangeVisualizer/.build/
 ios/DafShiurRangeVisualizer/.swiftpm/
+.vercel
+.env*
+scripts/.tmp/
+GROK_BUILD_PROMPT.md
