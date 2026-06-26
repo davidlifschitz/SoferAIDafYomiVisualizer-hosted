@@ -51,16 +51,11 @@ export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-export function buildAuthCallbackUrl(nextPath: string): string {
+export function buildAuthCallbackUrl(
+  nextPath: string,
+  origin: string,
+): string {
   const next = sanitizeNextPath(nextPath);
-  const origin = getAppUrl();
 
-  return `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
-}
-
-function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000"
-  );
+  return `${origin.replace(/\/$/, "")}/auth/callback?next=${encodeURIComponent(next)}`;
 }

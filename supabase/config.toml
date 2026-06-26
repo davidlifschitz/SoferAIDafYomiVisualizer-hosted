@@ -165,6 +165,8 @@ additional_redirect_urls = [
   "http://127.0.0.1:3000/auth/callback",
   "http://localhost:3000/**",
   "http://127.0.0.1:3000/**",
+  "https://sofer-aid-af-yomi-visualizer-hosted-*.vercel.app/**",
+  "https://sofer-aid-af-yomi-visualizer-hosted-davidlifschitzs-projects.vercel.app/**",
 ]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600

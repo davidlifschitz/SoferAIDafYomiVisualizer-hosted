@@ -1,8 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { resolveRequestOrigin } from "@/lib/auth/origin";
 import { buildAuthCallbackUrl, sanitizeNextPath } from "@/lib/auth/redirect";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,19 +10,6 @@ export type LoginActionState = {
   error?: string;
   success?: boolean;
 };
-
-async function getRequestOrigin(): Promise<string> {
-  const headerList = await headers();
-  const headerOrigin = headerList.get("origin");
-  if (headerOrigin) {
-    return headerOrigin;
-  }
-
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000"
-  );
-}
 
 export async function signInWithEmail(
   _previousState: LoginActionState,
@@ -36,11 +23,12 @@ export async function signInWithEmail(
   }
 
   try {
+    const origin = await resolveRequestOrigin();
     const supabase = await createClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: buildAuthCallbackUrl(next),
+        emailRedirectTo: buildAuthCallbackUrl(next, origin),
       },
     });
 
@@ -60,7 +48,7 @@ export async function signInWithEmail(
 export async function signInWithGoogle(formData: FormData) {
   const next = sanitizeNextPath(formData.get("next")?.toString());
   const supabase = await createClient();
-  const origin = await getRequestOrigin();
+  const origin = await resolveRequestOrigin();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

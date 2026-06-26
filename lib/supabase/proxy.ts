@@ -11,6 +11,12 @@ import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/env";
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/auth/callback";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   if (!needsSessionRefresh(pathname)) {
     return NextResponse.next({ request });
   }
