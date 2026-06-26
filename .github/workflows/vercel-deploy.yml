@@ -25,5 +25,6 @@ jobs:
       # Preview env vars require native Git connection on Vercel; production
       # vars are configured and safe to use for preview deployments.
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+      - run: cp .vercel/.env.production.local .env.production.local
       - run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
       - run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
