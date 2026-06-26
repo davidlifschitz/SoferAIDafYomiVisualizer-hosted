@@ -36,4 +36,31 @@ describe("supabase health", () => {
     });
     expect(formatSupabaseOfflineHelp(health)).toContain("/library");
   });
+
+  it("sends the publishable key when checking hosted supabase health", async () => {
+    vi.stubEnv(
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "https://example.supabase.co",
+    );
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "hosted-anon-key");
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const health = await getSupabaseHealth();
+
+    expect(health).toEqual({
+      reachable: true,
+      local: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://example.supabase.co/auth/v1/health",
+      expect.objectContaining({
+        headers: {
+          apikey: "hosted-anon-key",
+        },
+      }),
+    );
+  });
 });

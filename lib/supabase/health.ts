@@ -1,4 +1,7 @@
-import { getSupabaseUrl } from "@/lib/supabase/env";
+import {
+  getSupabasePublishableKey,
+  getSupabaseUrl,
+} from "@/lib/supabase/env";
 
 export type SupabaseHealth = {
   reachable: boolean;
@@ -31,11 +34,25 @@ export async function getSupabaseHealth(
 
   const local = isLocalSupabaseUrl(supabaseUrl);
   const healthUrl = `${supabaseUrl.replace(/\/$/, "")}/auth/v1/health`;
+  const headers: Record<string, string> = {};
+
+  if (!local) {
+    try {
+      headers.apikey = getSupabasePublishableKey();
+    } catch {
+      return {
+        reachable: false,
+        local,
+        message: "Supabase environment variables are not configured.",
+      };
+    }
+  }
 
   try {
     const response = await fetch(healthUrl, {
       method: "GET",
       cache: "no-store",
+      headers,
       signal: AbortSignal.timeout(timeoutMs),
     });
 
